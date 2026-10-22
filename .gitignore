@@ -1,0 +1,41 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.egg-info/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+coverage/
+
+# --- AWS CDK ---
+# Synthesized CloudFormation output: regenerated on every `cdk synth`.
+cdk.out/
+# Cached lookups (hosted zone IDs, account details) — environment-specific.
+cdk.context.json
+
+# --- Secrets & credentials: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials
+credentials.*
+secrets.*
+.aws/
+
+# --- Editor / OS ---
+.idea/
+.DS_Store
+*.swp
