@@ -18,15 +18,27 @@ gets temporary keys via a browser sign-in, so there are no long-lived access key
 sitting on disk to leak.
 
 1. Console → **IAM Identity Center** → make sure the region selector says
-   **Europe (Ireland) eu-west-1** → **Enable**.
+   **Europe (Ireland) eu-west-1** → **Enable** → choose **Single-Region instance**.
+   (Multi-Region replicates sign-in to a second region for resilience, but it
+   needs a customer-managed KMS key at ~$1/month each and an external identity
+   provider rather than Identity Center's own directory. Overkill for one user.)
 2. **Users → Add user**: username `john`, your email. Accept the invitation email
    and set a password + MFA.
 3. **Permission sets → Create permission set → Predefined → AdministratorAccess**.
    (Broad, but acceptable for a single-person learning account; tighten later.)
+   - Name: keep `AdministratorAccess`. Description: optional.
+   - **Session duration: 4 hours.** This is how long CLI credentials last before
+     `aws sso login` is needed again. The 1-hour default interrupts long sessions,
+     and the 12-hour maximum leaves a stolen session usable for longer.
+   - Relay state: blank (the console page to land on after sign-in).
+   - Tags: optional, e.g. `Project` = `pensiontracker` (free metadata).
 4. **AWS accounts** → tick your account → **Assign users or groups** → `john` →
    `AdministratorAccess`.
-5. Note the **AWS access portal URL** on the Identity Center dashboard
-   (e.g. `https://d-xxxxxxxxxx.awsapps.com/start`) — the CLI needs it.
+5. Note the **AWS access portal URL** on the Identity Center dashboard — the CLI
+   needs it. Use the **IPv4-only** one ending in `/start`
+   (e.g. `https://d-xxxxxxxxxx.awsapps.com/start`): every CLI version accepts it.
+   The dual-stack (`*.app.aws`) and Regional IPv4 (`*.portal.amazonaws.com`)
+   URLs open the same portal; dual-stack only matters on IPv6-only networks.
 
 ## 3. Register the domain (Route 53)
 

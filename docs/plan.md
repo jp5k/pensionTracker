@@ -217,7 +217,9 @@ A standing bar every checklist item is measured against:
 
 - Planning complete. Local tooling installed (AWS CLI v2 in `~/.local/bin`,
   uv, CDK CLI); `aws configure sso` profile not yet created.
-- Repo initialised (no commits yet); docs scaffolded.
+- Repo initialised and pushed to GitHub (public:
+  https://github.com/jp5k/pensionTracker), with commits using the GitHub
+  noreply email (set in this repo's local git config). Docs scaffolded.
 - `infra/` CDK app written but **not yet deployed**: `CertificateStack`
   (us-east-1), `SiteStack` (eu-west-1) and `BudgetStack`, with cdk-nag
   applied as an Aspect. `uv run pytest`: 16 tests pass at 100% coverage, with
