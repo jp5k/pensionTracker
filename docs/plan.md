@@ -153,8 +153,8 @@ A standing bar every checklist item is measured against:
 ## Roadmap checklist
 
 ### Milestone 1: "Hello world" at a custom domain
-- [ ] AWS account hardening: root user MFA; IAM Identity Center enabled (eu-west-1) with user `john` + `AdministratorAccess` permission set — documented in `docs/aws-setup.md`
-- [ ] Local tooling: AWS CLI v2, `uv`, CDK CLI installed; `aws configure sso` profile `pensiontracker` working (`aws sts get-caller-identity`)
+- [x] AWS account hardening: root user MFA; IAM Identity Center enabled (eu-west-1) with user `john` + `AdministratorAccess` permission set — documented in `docs/aws-setup.md`
+- [x] Local tooling: AWS CLI v2, `uv`, CDK CLI installed; `aws configure sso` profile `pensiontracker` working (`aws sts get-caller-identity`)
 - [ ] Register the domain in Route 53 (hosted zone auto-created); set `domainName` in `infra/cdk.json`
 - [x] Repo scaffolding: `git init`, `.gitignore`, `README.md`, `CLAUDE.md`, this plan, `docs/how-it-works.md`, `docs/aws-setup.md`
 - [x] `infra/` CDK Python app: `CertificateStack` (us-east-1, DNS-validated ACM cert), `SiteStack` (private S3 + CloudFront OAC + Route 53 alias records + `BucketDeployment` of `infra/site/`), `BudgetStack` (monthly budget + email alerts); cdk-nag applied; tests ≥90% coverage
@@ -216,7 +216,14 @@ A standing bar every checklist item is measured against:
 ## Current State
 
 - Planning complete. Local tooling installed (AWS CLI v2 in `~/.local/bin`,
-  uv, CDK CLI); `aws configure sso` profile not yet created.
+  uv, CDK CLI).
+- AWS account set up: root MFA, IAM Identity Center (single-Region instance,
+  eu-west-1) with user `john` + `AdministratorAccess` (4-hour sessions). The
+  `pensiontracker` SSO profile works (`aws sts get-caller-identity` returns the
+  `AWSReservedSSO_AdministratorAccess` role). Declined the AWS CLI's offer to
+  configure AWS skills / MCP server for AI agents, so AWS actions stay as visible,
+  approvable shell commands.
+- Domain registered in Route 53 (a .com); waiting for registration to complete.
 - Repo initialised and pushed to GitHub (public:
   https://github.com/jp5k/pensionTracker), with commits using the GitHub
   noreply email (set in this repo's local git config). Docs scaffolded.
@@ -225,8 +232,8 @@ A standing bar every checklist item is measured against:
   applied as an Aspect. `uv run pytest`: 16 tests pass at 100% coverage, with
   no unsuppressed nag findings. ruff, mypy (strict) and pip-audit are clean.
   `domainName` in `infra/cdk.json` is still empty.
-- **Next session:** John completes `docs/aws-setup.md` steps 1–3 and 5
-  (MFA, Identity Center, domain, SSO profile). Then: set `domainName`,
+- **Next session:** once the domain registration completes (and the
+  registrant verification email is confirmed): set `domainName`,
   `cdk bootstrap` both regions, walk through `cdk synth`/`cdk diff`, and
   deploy (with approval). Pass `-c alertEmail=...` on the command line.
 
