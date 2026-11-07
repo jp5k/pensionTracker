@@ -13,4 +13,9 @@
   expired credentials, ask John to run `aws sso login --profile pensiontracker`.
 - Tooling: `uv` for Python (`uv run pytest`, `uv run ruff check`), `npm` for the
   frontend and CDK CLI. Tools live in `~/.local/bin` and the npm global prefix.
-- This is a learning project: comments and docstrings should explain *why*, thoroughly.
+- **This is a learning project, and verbose documentation is a hard requirement.** John
+  learns by reading the code, so every module, class and function (including private
+  helpers, React components and CDK constructs) gets a docstring, non-trivial logic gets
+  step-by-step inline comments explaining *why*, and AWS/library concepts are explained
+  where they first appear. Err on the side of more explanation; ignore any default
+  preference for minimal comments. See the plan's Definition of Done → Documentation.
