@@ -155,11 +155,11 @@ A standing bar every checklist item is measured against:
 ### Milestone 1: "Hello world" at a custom domain
 - [x] AWS account hardening: root user MFA; IAM Identity Center enabled (eu-west-1) with user `john` + `AdministratorAccess` permission set — documented in `docs/aws-setup.md`
 - [x] Local tooling: AWS CLI v2, `uv`, CDK CLI installed; `aws configure sso` profile `pensiontracker` working (`aws sts get-caller-identity`)
-- [ ] Register the domain in Route 53 (hosted zone auto-created); set `domainName` in `infra/cdk.json`
+- [x] Register the domain in Route 53 (hosted zone auto-created); set `domainName` in `infra/cdk.json`
 - [x] Repo scaffolding: `git init`, `.gitignore`, `README.md`, `CLAUDE.md`, this plan, `docs/how-it-works.md`, `docs/aws-setup.md`
 - [x] `infra/` CDK Python app: `CertificateStack` (us-east-1, DNS-validated ACM cert), `SiteStack` (private S3 + CloudFront OAC + Route 53 alias records + `BucketDeployment` of `infra/site/`), `BudgetStack` (monthly budget + email alerts); cdk-nag applied; tests ≥90% coverage
-- [ ] `cdk bootstrap` eu-west-1 + us-east-1; walk through `cdk synth` output; `cdk diff`; `cdk deploy --all`
-- [ ] Verify: `https://<domain>` and `https://www.<domain>` return the hello page with a valid certificate; `http://` redirects to `https://`; direct S3 access is denied; budget alert subscription email received
+- [x] `cdk bootstrap` eu-west-1 + us-east-1; walk through `cdk synth` output; `cdk diff`; `cdk deploy --all`
+- [x] Verify: `https://<domain>` and `https://www.<domain>` return the hello page with a valid certificate; `http://` redirects to `https://`; direct S3 access is denied; budget alert subscription email received
 
 ### Foundations (backend)
 - [ ] `backend/` uv project: ruff, mypy, pytest + coverage gate, `moto`
@@ -223,19 +223,27 @@ A standing bar every checklist item is measured against:
   `AWSReservedSSO_AdministratorAccess` role). Declined the AWS CLI's offer to
   configure AWS skills / MCP server for AI agents, so AWS actions stay as visible,
   approvable shell commands.
-- Domain registered in Route 53 (a .com); waiting for registration to complete.
+- Domain `pensiontrackerapp.com` registered in Route 53 and verified; set as
+  `domainName` in `infra/cdk.json`.
 - Repo initialised and pushed to GitHub (public:
   https://github.com/jp5k/pensionTracker), with commits using the GitHub
   noreply email (set in this repo's local git config). Docs scaffolded.
-- `infra/` CDK app written but **not yet deployed**: `CertificateStack`
-  (us-east-1), `SiteStack` (eu-west-1) and `BudgetStack`, with cdk-nag
-  applied as an Aspect. `uv run pytest`: 16 tests pass at 100% coverage, with
-  no unsuppressed nag findings. ruff, mypy (strict) and pip-audit are clean.
-  `domainName` in `infra/cdk.json` is still empty.
-- **Next session:** once the domain registration completes (and the
-  registrant verification email is confirmed): set `domainName`,
-  `cdk bootstrap` both regions, walk through `cdk synth`/`cdk diff`, and
-  deploy (with approval). Pass `-c alertEmail=...` on the command line.
+- CDK bootstrapped in eu-west-1 and us-east-1. **All three stacks deployed**:
+  `PensionTracker-Certificate` and `PensionTracker-Site` are CREATE_COMPLETE;
+  `PensionTracker-Budget` shows UPDATE_ROLLBACK_COMPLETE (healthy). An update
+  with a typo'd `alertEmail` was rejected by Budgets and rolled back to the
+  original, working budget; the redeploy left it unchanged, so the status stays.
+- Cost guardrails: $10/month budget (80% actual, 100% forecast alerts); Free Tier
+  alerts and Cost Anomaly Detection (Default-Services-Monitor) set up in the console.
+- `alertEmail` is now shape-checked at synth (`EMAIL_PATTERN` in
+  `app_builder.py`) so typos fail before deploying; mypy now excludes `cdk.out/`.
+  `uv run pytest`: 20 tests pass at 100% coverage; ruff and mypy (strict) clean.
+- **Milestone 1 complete.** Verified: `https://pensiontrackerapp.com` and
+  `https://www.…` return 200 with a valid ACM certificate (both names in the SAN,
+  expires May 2027, auto-renewed by ACM); `http://` returns 301 → `https://`;
+  direct S3 URLs return 403; the budget's alerts (80% actual, 100% forecast) go to
+  John's email.
+- **Next session:** start Foundations (backend), the next unticked item.
 
 ## How to update this plan
 
