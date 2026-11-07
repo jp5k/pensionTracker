@@ -40,3 +40,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "N"]
 
 [tool.mypy]
 strict = true
+# cdk.out/ holds CDK's own synthesized assets (e.g. the Python Lambda behind
+# BucketDeployment). It isn't our code and needs boto3, which we don't install,
+# so type-checking it only produces noise.
+exclude = ["^cdk\\.out/"]

@@ -181,3 +181,16 @@ def test_missing_settings_fail_with_helpful_message(
         monkeypatch.delenv("CDK_DEFAULT_ACCOUNT", raising=False)
     with pytest.raises(ValueError, match=message):
         build_app(App(context=context))
+
+
+@pytest.mark.parametrize(
+    "bad_email",
+    ["john@jwparnell@hotmail.com", "no-at-sign.com", "spaces in@example.com", "user@nodot"],
+)
+def test_malformed_alert_email_fails_before_deploy(
+    monkeypatch: pytest.MonkeyPatch, bad_email: str
+) -> None:
+    """A typo'd email must fail at synth, not as a Budgets error mid-deploy."""
+    monkeypatch.setenv("CDK_DEFAULT_ACCOUNT", "123456789012")
+    with pytest.raises(ValueError, match="doesn't look like an email address"):
+        build_app(App(context={"domainName": TEST_DOMAIN, "alertEmail": bad_email}))

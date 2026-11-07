@@ -5,6 +5,7 @@ settings and inspect the synthesized templates.
 """
 
 import os
+import re
 from dataclasses import dataclass
 
 from aws_cdk import App, Aspects, Environment
@@ -21,6 +22,12 @@ from pension_tracker_infra.site_stack import SiteStack
 APP_REGION = "eu-west-1"
 #: CloudFront only accepts certificates from this region.
 CERTIFICATE_REGION = "us-east-1"
+#: Deliberately loose shape check for the alert email: exactly one "@", no
+#: spaces, and a dot in the domain part. Full RFC 5322 validation is famously
+#: hairy and not worth it here; the goal is to catch typos like
+#: "john@jwparnell@hotmail.com" at synth time, rather than have AWS Budgets
+#: reject them halfway through a deploy (forcing a CloudFormation rollback).
+EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 
 @dataclass(frozen=True)
@@ -54,12 +61,15 @@ def build_app(app: App) -> AppStacks:
 
     Raises:
         ValueError: If ``domainName`` / ``alertEmail`` context or the AWS account
-            is missing.
+            is missing, or ``alertEmail`` isn't shaped like an email address.
     """
     domain_name = _require_context(
         app, "domainName", "set it in infra/cdk.json to the domain registered in Route 53.")
     alert_email = _require_context(
         app, "alertEmail", "pass it on the command line: -c alertEmail=you@example.com")
+    if not EMAIL_PATTERN.fullmatch(alert_email):
+        raise ValueError(f"alertEmail {alert_email!r} doesn't look like an email address "
+                         "(expected something like you@example.com).")
 
     # The CDK CLI sets this from the --profile in use. Hosted-zone lookups need
     # an explicit account, so we can't fall back to an "environment-agnostic" stack.

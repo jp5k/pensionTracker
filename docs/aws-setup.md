@@ -94,5 +94,12 @@ the app, and us-east-1 because CloudFront only accepts certificates from there.
 
 ```bash
 ACCOUNT=$(aws sts get-caller-identity --profile pensiontracker --query Account --output text)
-cdk bootstrap aws://$ACCOUNT/eu-west-1 aws://$ACCOUNT/us-east-1 --profile pensiontracker
+cd infra
+cdk bootstrap aws://$ACCOUNT/eu-west-1 aws://$ACCOUNT/us-east-1 \
+  --profile pensiontracker -c alertEmail=you@example.com
 ```
+
+Inside `infra/`, `cdk bootstrap` still runs the app first, even with the
+environments given explicitly, and the app refuses to start without an
+`alertEmail` (see `app_builder.py`). Bootstrap never uses the email, so a
+placeholder is fine here.
