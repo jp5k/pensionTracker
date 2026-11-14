@@ -1,0 +1,70 @@
+[project]
+name = "pension-tracker-api"
+version = "0.1.0"
+description = "Python AWS Lambda handlers behind the pensionTracker HTTP API"
+# Lambda's newest managed Python runtime we target is python3.13, so the code
+# must run on 3.13. Matching infra/ keeps one Python version across the repo.
+requires-python = ">=3.13"
+# Runtime dependencies get bundled into the Lambda deployment package, so each
+# one adds size and cold-start time; add them deliberately. None are needed
+# yet: the health handler uses only the standard library. (AWS Lambda Powertools
+# arrives with the Pots item; boto3 is preinstalled in the Lambda runtime, but
+# we'll pin our own copy when handlers first need it, for reproducible builds.)
+dependencies = []
+
+[dependency-groups]
+# Development-only tools: installed in the local virtualenv by `uv sync`, but
+# never shipped to Lambda.
+dev = [
+    "pytest>=8.4",           # test runner
+    "pytest-cov>=6.2",       # coverage measurement + the 90% gate below
+    "ruff>=0.13",            # linter and formatter (replaces flake8, isort, black)
+    "mypy>=1.18",            # static type checker, run in strict mode
+    "pip-audit>=2.9",        # checks dependencies against known vulnerabilities
+    # moto fakes AWS services in-process, so handler code that calls DynamoDB
+    # can be tested on a laptop with no AWS account, cost or network. The
+    # [dynamodb] extra pulls in just what's needed to fake DynamoDB.
+    "moto[dynamodb]>=5.1",
+    "boto3>=1.40",           # the AWS SDK that moto intercepts in tests
+    # Type stubs so mypy (strict) understands boto3's DynamoDB client, which is
+    # generated at runtime and otherwise invisible to type checkers.
+    "boto3-stubs[dynamodb]>=1.40",
+]
+
+# The backend is a set of Lambda handlers, not a library to publish on PyPI, so
+# uv only manages its virtualenv and doesn't build/install it as a package.
+# Instead, pytest and mypy are told to look in src/ (see below).
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# "src layout": the importable package lives in src/, separate from tests/.
+# CDK will later bundle only src/ into each Lambda, so tests and dev files can
+# never end up in a deployment package. This line lets tests import it.
+pythonpath = ["src"]
+# The coverage gate from the Definition of Done: the test run fails below 90%.
+# --cov-branch also counts both sides of every if/else, not just lines run.
+addopts = "--cov=pension_tracker_api --cov-branch --cov-report=term-missing --cov-fail-under=90"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+# Tell ruff's import sorter which package is "ours" (first-party) for grouping.
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Same rule families as infra/: pycodestyle errors/warnings (E, W), pyflakes
+# (F), import sorting (I), bugbear's likely-bug patterns (B), pyupgrade's modern
+# syntax (UP), bandit's security checks (S) and PEP 8 naming (N).
+select = ["E", "F", "W", "I", "B", "UP", "S", "N"]
+
+[tool.ruff.lint.per-file-ignores]
+# `assert` is how pytest tests are written (bandit flags it in normal code
+# because asserts are stripped when Python runs with -O).
+"tests/**" = ["S101"]
+
+[tool.mypy]
+strict = true
+# Find the package under src/, matching pytest's pythonpath above.
+mypy_path = "src"

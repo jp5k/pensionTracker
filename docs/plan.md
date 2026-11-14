@@ -351,7 +351,9 @@ A standing bar every checklist item is measured against:
   - The prod table's key schema is fixed after launch; changes to the data model
     are additive (new item types / attributes), never a key change.
 - **Cost** — every new AWS resource is checked against the free tier and its
-  cost noted in this plan (Environments & cost).
+  cost noted in this plan (Environments & cost). A new AWS *service* is also
+  added to [`aws-services.md`](aws-services.md) (what it is, what we use it
+  for, cost).
 - **Documentation (essential: John learns from this code)** — this project
   exists so John can learn AWS, CDK, Python and React by reading it. Full
   documentation and **verbose comments are a requirement, not a nice-to-have**,
@@ -391,7 +393,7 @@ A standing bar every checklist item is measured against:
 - [x] Verify: `https://<domain>` and `https://www.<domain>` return the hello page with a valid certificate; `http://` redirects to `https://`; direct S3 access is denied; budget alert subscription email received
 
 ### Foundations (backend)
-- [ ] `backend/` uv project: ruff, mypy, pytest + coverage gate, `moto`
+- [x] `backend/` uv project: ruff, mypy, pytest + coverage gate, `moto`
 - [ ] Split dev vs prod: stage-aware stacks selected with `-c stage=dev|prod` (prod on the apex domain, dev on `dev.<domain>`). **Prod keeps its existing stack names** (`PensionTracker-Certificate`, `PensionTracker-Site`), which already own the live apex/www records: renaming them would make CloudFormation create duplicate records for the same domain. Only dev gets new names (`PensionTracker-Dev-*`). `BudgetStack` is account-wide, so it's deployed once, not per stage. dev responses carry `X-Robots-Tag: noindex`. Tests cover both stages' synthesized names, domains and headers
 - [ ] Deploy dev (with approval) and confirm `https://dev.pensiontrackerapp.com` serves while prod is unchanged (`cdk diff` on prod shows no changes)
 
@@ -515,7 +517,17 @@ they come after it.
   workflow; frontend library choices; API Gateway HTTP API under `/api/*`;
   data safety rules; fantasy portfolios + AI insights (stretch). CLAUDE.md and
   the Definition of Done now make verbose documentation a hard requirement.
-- **Next:** Foundations (backend), first item: the `backend/` uv project.
+- `backend/` uv project created (decision record 0001): Python 3.13, `src/`
+  layout so CDK will bundle only runtime code; ruff, mypy (strict), pytest with
+  a 90% line + branch coverage gate, pip-audit; moto for faking AWS, plus an
+  autouse fixture forcing fake credentials so tests can never reach the real
+  account. First code: `responses.json_response` (API Gateway v2 response
+  shape, `Cache-Control: no-store`) and the `health` handler (written and
+  tested, deployed in "First Lambda end-to-end"). 9 tests, 100% coverage; all
+  checks clean. `docs/decisions/` started (README + template + 0001).
+- **Uncommitted, John reviewing:** the `backend/` project, `docs/decisions/`,
+  README Testing section and this plan update. Commit once reviewed.
+- **Next:** Foundations, "Split dev vs prod".
 
 ## How to update this plan
 

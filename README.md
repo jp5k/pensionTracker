@@ -7,12 +7,13 @@ and see how your pensions are growing and where they're heading at retirement.
 Built as a learning and portfolio project for **AWS serverless** and
 **infrastructure as code**. See [`docs/plan.md`](docs/plan.md) for the roadmap
 and architecture, and [`docs/how-it-works.md`](docs/how-it-works.md) for a
-plain-English walkthrough.
+plain-English walkthrough. [`docs/aws-services.md`](docs/aws-services.md) lists every AWS
+service used, what it's for and what it costs.
 
 ## Stack
 
 - **Frontend:** React + TypeScript (Vite), hosted on S3 + CloudFront _(planned; currently a static hello-world page)_
-- **Backend:** Python 3.13 AWS Lambda functions behind API Gateway HTTP API _(planned)_
+- **Backend:** Python 3.13 AWS Lambda functions behind API Gateway HTTP API, in [`backend/`](backend/) _(code started; not yet deployed)_
 - **Auth:** Amazon Cognito _(planned)_
 - **Data:** DynamoDB _(planned)_
 - **Infrastructure:** AWS CDK (Python) → CloudFormation, in [`infra/`](infra/)
@@ -25,10 +26,23 @@ plain-English walkthrough.
 
 ## Testing
 
+Each Python project has the same checks. Run them from its folder:
+
 ```bash
-cd infra
-uv run pytest          # includes the ≥90% coverage gate and cdk-nag checks
+cd backend             # Lambda code (or: cd infra, for the CDK app)
+uv sync                # create/update the virtualenv from uv.lock
+uv run pytest          # tests + the ≥90% coverage gate
+uv run ruff check      # lint
+uv run ruff format --check   # formatting
+uv run mypy .          # strict type checking
+uv run pip-audit       # known-vulnerability check on dependencies
 ```
+
+`backend/` tests fake AWS with [moto](https://docs.getmoto.org/) and are forced
+onto fake credentials, so they never touch the real AWS account. `infra/` tests
+also run the cdk-nag security checks against the synthesized templates.
+
+Significant design choices are recorded in [`docs/decisions/`](docs/decisions/).
 
 ## Deploying
 
