@@ -33,3 +33,4 @@ What this makes easier, harder, or commits us to.
 ## Index
 
 - [0001. Backend as a separate uv project with a `src/` layout](0001-backend-project-layout.md)
+- [0002. Dev and prod stages, with prod keeping its original names](0002-dev-and-prod-stages.md)

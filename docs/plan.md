@@ -394,7 +394,7 @@ A standing bar every checklist item is measured against:
 
 ### Foundations (backend)
 - [x] `backend/` uv project: ruff, mypy, pytest + coverage gate, `moto`
-- [ ] Split dev vs prod: stage-aware stacks selected with `-c stage=dev|prod` (prod on the apex domain, dev on `dev.<domain>`). **Prod keeps its existing stack names** (`PensionTracker-Certificate`, `PensionTracker-Site`), which already own the live apex/www records: renaming them would make CloudFormation create duplicate records for the same domain. Only dev gets new names (`PensionTracker-Dev-*`). `BudgetStack` is account-wide, so it's deployed once, not per stage. dev responses carry `X-Robots-Tag: noindex`. Tests cover both stages' synthesized names, domains and headers
+- [x] Split dev vs prod: stage-aware stacks selected with `-c stage=dev|prod` (prod on the apex domain, dev on `dev.<domain>`). **Prod keeps its existing stack names** (`PensionTracker-Certificate`, `PensionTracker-Site`), which already own the live apex/www records: renaming them would make CloudFormation create duplicate records for the same domain. Only dev gets new names (`PensionTracker-Dev-*`). `BudgetStack` is account-wide, so it's deployed once, not per stage. dev responses carry `X-Robots-Tag: noindex`. Tests cover both stages' synthesized names, domains and headers
 - [ ] Deploy dev (with approval) and confirm `https://dev.pensiontrackerapp.com` serves while prod is unchanged (`cdk diff` on prod shows no changes)
 
 ### First Lambda end-to-end
@@ -525,9 +525,22 @@ they come after it.
   shape, `Cache-Control: no-store`) and the `health` handler (written and
   tested, deployed in "First Lambda end-to-end"). 9 tests, 100% coverage; all
   checks clean. `docs/decisions/` started (README + template + 0001).
-- **Uncommitted, John reviewing:** the `backend/` project, `docs/decisions/`,
-  README Testing section and this plan update. Commit once reviewed.
-- **Next:** Foundations, "Split dev vs prod".
+- `docs/aws-services.md` added: every AWS service, what it's for, status and cost.
+- **Dev/prod split done (code only, nothing deployed; decision record 0002).**
+  `-c stage=dev|prod` is required on every `cdk` command (no default; unknown
+  values rejected). Per-stage differences live in `infra/.../stages.py`. Prod
+  keeps its original stack names and construct IDs (tests pin the exact
+  deployed logical IDs); dev is `PensionTracker-Dev-Certificate` /
+  `PensionTracker-Dev-Site` on `dev.<domain>` with `X-Robots-Tag: noindex`
+  (custom headers policy repeating the managed security headers). The budget is
+  prod-only, so dev needs no `alertEmail`. Fixtures build both stages; shared
+  security tests run against each. infra: 49 tests, 100% coverage, ruff + mypy
+  clean. Verified: `cdk diff -c stage=prod` shows **no differences** in all
+  three live stacks; `cdk diff -c stage=dev` shows only the two new stacks.
+  README deploy section, `aws-setup.md` step 6 (bootstrap now uses
+  `-c stage=dev`) and `how-it-works.md` updated. Uncommitted for John's review.
+- **Next:** Foundations, "Deploy dev" (needs John's approval: creates the two
+  dev stacks; cost ≈ zero: free certificate, free-tier CloudFront/S3).
 
 ## How to update this plan
 

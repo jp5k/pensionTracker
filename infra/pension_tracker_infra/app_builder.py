@@ -1,4 +1,4 @@
-"""Wires the stacks into a CDK app.
+"""Wires one stage's stacks (dev or prod) into a CDK app.
 
 Kept separate from ``app.py`` so tests can build the exact same app with test
 settings and inspect the synthesized templates.
@@ -14,6 +14,7 @@ from cdk_nag import AwsSolutionsChecks
 from pension_tracker_infra.budget_stack import BudgetStack
 from pension_tracker_infra.certificate_stack import CertificateStack
 from pension_tracker_infra.site_stack import SiteStack
+from pension_tracker_infra.stages import STAGES, StageSettings, settings_for
 
 #: Where the app lives (Ireland). Chosen over London (eu-west-2) because it is
 #: slightly cheaper for most services and gets new AWS features first; the
@@ -32,11 +33,20 @@ EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 @dataclass(frozen=True)
 class AppStacks:
-    """The stacks that make up the app, returned for tests to inspect."""
+    """The stacks that make up one stage of the app, returned for tests to inspect.
 
+    Attributes:
+        stage: The settings the stacks were built from.
+        certificate: The us-east-1 certificate stack.
+        site: The website stack.
+        budget: The cost-budget stack, or ``None`` in stages without one (dev):
+            the budget covers the whole account, so only prod deploys it.
+    """
+
+    stage: StageSettings
     certificate: CertificateStack
     site: SiteStack
-    budget: BudgetStack
+    budget: BudgetStack | None
 
 
 def _require_context(app: App, key: str, hint: str) -> str:
@@ -50,8 +60,22 @@ def _require_context(app: App, key: str, hint: str) -> str:
     return str(value)
 
 
+def _require_alert_email(app: App) -> str:
+    """Read and sanity-check ``alertEmail`` (only needed by stages with a budget)."""
+    alert_email = _require_context(
+        app, "alertEmail", "pass it on the command line: -c alertEmail=you@example.com")
+    if not EMAIL_PATTERN.fullmatch(alert_email):
+        raise ValueError(f"alertEmail {alert_email!r} doesn't look like an email address "
+                         "(expected something like you@example.com).")
+    return alert_email
+
+
 def build_app(app: App) -> AppStacks:
-    """Add all stacks to ``app`` and switch on cdk-nag security checks.
+    """Add one stage's stacks to ``app`` and switch on cdk-nag security checks.
+
+    Which stage is built comes from ``-c stage=dev|prod``. It is required, with
+    no default, so a forgotten flag fails here rather than deploying to an
+    environment nobody meant to touch.
 
     Args:
         app: The CDK app to populate.
@@ -60,16 +84,18 @@ def build_app(app: App) -> AppStacks:
         The created stacks.
 
     Raises:
-        ValueError: If ``domainName`` / ``alertEmail`` context or the AWS account
-            is missing, or ``alertEmail`` isn't shaped like an email address.
+        ValueError: If ``stage`` is missing or unknown; if ``domainName`` or the
+            AWS account is missing; or, for prod, if ``alertEmail`` is missing
+            or isn't shaped like an email address.
     """
+    # The stage comes first because it decides what else is required (dev has
+    # no budget, so it doesn't need an alert email).
+    stage_name = _require_context(
+        app, "stage", f"choose the environment with -c stage=<{'|'.join(STAGES)}>.")
     domain_name = _require_context(
         app, "domainName", "set it in infra/cdk.json to the domain registered in Route 53.")
-    alert_email = _require_context(
-        app, "alertEmail", "pass it on the command line: -c alertEmail=you@example.com")
-    if not EMAIL_PATTERN.fullmatch(alert_email):
-        raise ValueError(f"alertEmail {alert_email!r} doesn't look like an email address "
-                         "(expected something like you@example.com).")
+    stage = settings_for(stage_name, domain_name)
+    alert_email = _require_alert_email(app) if stage.has_budget else None
 
     # The CDK CLI sets this from the --profile in use. Hosted-zone lookups need
     # an explicit account, so we can't fall back to an "environment-agnostic" stack.
@@ -78,10 +104,15 @@ def build_app(app: App) -> AppStacks:
         raise ValueError("No AWS account: run cdk with --profile pensiontracker "
                          "(and `aws sso login` if the session expired).")
 
+    # Stack names: prod's prefix is plain "PensionTracker", so these come out
+    # exactly as originally deployed ("PensionTracker-Certificate"...); dev's
+    # come out as "PensionTracker-Dev-Certificate"... (see stages.py for why
+    # prod's names must never change).
     certificate = CertificateStack(
         app,
-        "PensionTracker-Certificate",
-        domain_name=domain_name,
+        f"{stage.stack_prefix}-Certificate",
+        zone_domain=domain_name,
+        site_domains=stage.site_domains,
         env=Environment(account=account, region=CERTIFICATE_REGION),
         # Lets the site stack (another region) use this stack's certificate.
         # CDK implements it with SSM parameters + small custom resources.
@@ -89,21 +120,27 @@ def build_app(app: App) -> AppStacks:
     )
     site = SiteStack(
         app,
-        "PensionTracker-Site",
-        domain_name=domain_name,
+        f"{stage.stack_prefix}-Site",
+        zone_domain=domain_name,
+        site_domains=stage.site_domains,
         certificate=certificate.certificate,
+        noindex=stage.noindex,
         env=Environment(account=account, region=APP_REGION),
         cross_region_references=True,
     )
-    budget = BudgetStack(
-        app,
-        "PensionTracker-Budget",
-        alert_email=alert_email,
-        env=Environment(account=account, region=APP_REGION),
-    )
+    budget = None
+    if alert_email is not None:  # i.e. stage.has_budget
+        # Named without a stage prefix: there is one budget for the whole
+        # account, and this is the name it was first deployed under.
+        budget = BudgetStack(
+            app,
+            "PensionTracker-Budget",
+            alert_email=alert_email,
+            env=Environment(account=account, region=APP_REGION),
+        )
 
     # cdk-nag inspects every resource at synth time against the AWS Solutions
     # rule pack; any unsuppressed finding makes the synth report an error.
     Aspects.of(app).add(AwsSolutionsChecks(verbose=True))
 
-    return AppStacks(certificate=certificate, site=site, budget=budget)
+    return AppStacks(stage=stage, certificate=certificate, site=site, budget=budget)

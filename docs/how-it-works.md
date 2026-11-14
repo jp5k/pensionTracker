@@ -24,6 +24,20 @@ create, so the whole setup can be rebuilt from scratch with one command.
 
 A budget alarm emails the owner if the monthly AWS bill starts creeping up.
 
+### Two copies: dev and prod
+
+There are two separate copies of the site, built from the same code:
+
+- **prod** (`pensiontrackerapp.com`) is the real one that visitors see.
+- **dev** (`dev.pensiontrackerapp.com`) is a practice copy. Changes are tried
+  there first, and only reach prod once they've been checked. It tells search
+  engines not to list it, so people searching the web only find the real site.
+
+Each copy has its own storage, its own CloudFront setup and its own certificate,
+so nothing done to dev can affect prod. Every deployment command has to name
+which copy it's for; leaving it out is an error, so the real site can't be
+changed by accident.
+
 ## Coming next
 
 Signing in, adding pension pots, recording valuations and seeing projections.

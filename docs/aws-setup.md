@@ -96,10 +96,12 @@ the app, and us-east-1 because CloudFront only accepts certificates from there.
 ACCOUNT=$(aws sts get-caller-identity --profile pensiontracker --query Account --output text)
 cd infra
 cdk bootstrap aws://$ACCOUNT/eu-west-1 aws://$ACCOUNT/us-east-1 \
-  --profile pensiontracker -c alertEmail=you@example.com
+  --profile pensiontracker -c stage=dev
 ```
 
 Inside `infra/`, `cdk bootstrap` still runs the app first, even with the
-environments given explicitly, and the app refuses to start without an
-`alertEmail` (see `app_builder.py`). Bootstrap never uses the email, so a
-placeholder is fine here.
+environments given explicitly, and the app refuses to start without a `stage`
+(see `stages.py`). Bootstrap is per account/region, not per stage, so either
+stage works; `dev` is used because it doesn't need an `alertEmail`.
+(Bootstrapping was originally done before stages existed, with
+`-c alertEmail=...` instead; the result is identical.)

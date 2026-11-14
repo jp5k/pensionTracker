@@ -46,15 +46,33 @@ Significant design choices are recorded in [`docs/decisions/`](docs/decisions/).
 
 ## Deploying
 
+There are two environments ("stages"), and every `cdk` command must say which
+one it means with `-c stage=dev` or `-c stage=prod`. There's deliberately no
+default, so a forgotten flag fails instead of touching the live site
+([decision 0002](docs/decisions/0002-dev-and-prod-stages.md)).
+
+| Stage | Address | Stacks | Needs `alertEmail`? |
+|---|---|---|---|
+| `dev` | `https://dev.pensiontrackerapp.com` | `PensionTracker-Dev-Certificate`, `PensionTracker-Dev-Site` | No |
+| `prod` | `https://pensiontrackerapp.com` (+ `www.`) | `PensionTracker-Certificate`, `PensionTracker-Site`, `PensionTracker-Budget` | Yes (budget alerts) |
+
 ```bash
 aws sso login --profile pensiontracker
 cd infra
-cdk synth  --profile pensiontracker -c alertEmail=you@example.com   # inspect CloudFormation
-cdk diff   --profile pensiontracker -c alertEmail=you@example.com
-cdk deploy --all --profile pensiontracker -c alertEmail=you@example.com
+
+# dev: try changes here first
+cdk diff          --profile pensiontracker -c stage=dev
+cdk deploy --all  --profile pensiontracker -c stage=dev
+
+# prod: only after checking dev. The diff must show no "replace" on
+# stateful resources (plan → Definition of Done → Data safety).
+cdk diff          --profile pensiontracker -c stage=prod -c alertEmail=you@example.com
+cdk deploy --all  --profile pensiontracker -c stage=prod -c alertEmail=you@example.com
 ```
 
-The domain name is set in [`infra/cdk.json`](infra/cdk.json) (`domainName`).
+`cdk synth` (same flags) prints the CloudFormation templates without touching
+AWS resources. The domain name is set in [`infra/cdk.json`](infra/cdk.json)
+(`domainName`).
 
 ## Features
 
