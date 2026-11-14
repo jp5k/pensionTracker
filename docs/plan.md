@@ -538,7 +538,7 @@ they come after it.
   clean. Verified: `cdk diff -c stage=prod` shows **no differences** in all
   three live stacks; `cdk diff -c stage=dev` shows only the two new stacks.
   README deploy section, `aws-setup.md` step 6 (bootstrap now uses
-  `-c stage=dev`) and `how-it-works.md` updated. Uncommitted for John's review.
+  `-c stage=dev`) and `how-it-works.md` updated. Committed (28afd54).
 - **Next:** Foundations, "Deploy dev" (needs John's approval: creates the two
   dev stacks; cost ≈ zero: free certificate, free-tier CloudFront/S3).
 
