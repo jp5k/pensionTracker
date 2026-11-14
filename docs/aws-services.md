@@ -31,7 +31,7 @@ Budgets ──▶ SNS ──▶ Lambda (kill switch flag in Parameter Store)
 
 | Service | What it is | What we use it for | Status | Cost |
 |---|---|---|---|---|
-| **Route 53** | AWS's DNS service and domain registrar | Registered `pensiontrackerapp.com`; its hosted zone holds the DNS records for the site, `www.` and (later) `dev.` | ✅ | ~$16/year domain + $0.50/month hosted zone; alias lookups to CloudFront are free |
+| **Route 53** | AWS's DNS service and domain registrar | Registered `pensiontrackerapp.com`; its hosted zone holds the DNS records for the prod site (apex and `www.`) and the dev site (`dev.`) | ✅ | ~$16/year domain + $0.50/month hosted zone; alias lookups to CloudFront are free |
 | **Certificate Manager (ACM)** | Issues and auto-renews TLS (HTTPS) certificates | Certificates for the site's domains. CloudFront requires them in us-east-1, hence a separate small stack there | ✅ | Free (public certificates) |
 | **CloudFront** | Global content delivery network (CDN): servers worldwide that cache and serve content close to users | Serves the site over HTTPS, redirects `http://` to `https://`; later routes `/api/*` to the API and adds security headers (CSP, HSTS...) | ✅ | Always-free tier: 1 TB transfer + 10M requests/month |
 | **S3** | Object storage ("buckets" of files) | Private bucket holding the built React app; only CloudFront can read it (Origin Access Control) | ✅ | A few KB stored: pennies at most |

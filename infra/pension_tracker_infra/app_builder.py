@@ -26,7 +26,7 @@ CERTIFICATE_REGION = "us-east-1"
 #: Deliberately loose shape check for the alert email: exactly one "@", no
 #: spaces, and a dot in the domain part. Full RFC 5322 validation is famously
 #: hairy and not worth it here; the goal is to catch typos like
-#: "john@jwparnell@hotmail.com" at synth time, rather than have AWS Budgets
+#: "test@test@hotmail.com" at synth time, rather than have AWS Budgets
 #: reject them halfway through a deploy (forcing a CloudFormation rollback).
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 

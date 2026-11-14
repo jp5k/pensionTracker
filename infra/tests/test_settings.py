@@ -64,7 +64,7 @@ def test_missing_account_fails(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.usefixtures("account")
 @pytest.mark.parametrize(
     "bad_email",
-    ["john@jwparnell@hotmail.com", "no-at-sign.com", "spaces in@example.com", "user@nodot"],
+    ["test@test@hotmail.com", "no-at-sign.com", "spaces in@example.com", "user@nodot"],
 )
 def test_malformed_alert_email_fails_before_deploy(bad_email: str) -> None:
     """A typo'd email must fail at synth, not as a Budgets error mid-deploy."""

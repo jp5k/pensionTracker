@@ -395,7 +395,7 @@ A standing bar every checklist item is measured against:
 ### Foundations (backend)
 - [x] `backend/` uv project: ruff, mypy, pytest + coverage gate, `moto`
 - [x] Split dev vs prod: stage-aware stacks selected with `-c stage=dev|prod` (prod on the apex domain, dev on `dev.<domain>`). **Prod keeps its existing stack names** (`PensionTracker-Certificate`, `PensionTracker-Site`), which already own the live apex/www records: renaming them would make CloudFormation create duplicate records for the same domain. Only dev gets new names (`PensionTracker-Dev-*`). `BudgetStack` is account-wide, so it's deployed once, not per stage. dev responses carry `X-Robots-Tag: noindex`. Tests cover both stages' synthesized names, domains and headers
-- [ ] Deploy dev (with approval) and confirm `https://dev.pensiontrackerapp.com` serves while prod is unchanged (`cdk diff` on prod shows no changes)
+- [x] Deploy dev (with approval) and confirm `https://dev.pensiontrackerapp.com` serves while prod is unchanged (`cdk diff` on prod shows no changes)
 
 ### First Lambda end-to-end
 - [ ] `GET /health` Python Lambda behind an HTTP API, routed through CloudFront at `/api/*` (new behaviour in `SiteStack`: caching disabled, `Authorization` + query strings forwarded, viewer IP passed via `CloudFront-Viewer-Address`), deployed to dev — inspect the synthesized template, curl `https://dev.<domain>/api/health`, find its logs in CloudWatch
@@ -539,8 +539,16 @@ they come after it.
   three live stacks; `cdk diff -c stage=dev` shows only the two new stacks.
   README deploy section, `aws-setup.md` step 6 (bootstrap now uses
   `-c stage=dev`) and `how-it-works.md` updated. Committed (28afd54).
-- **Next:** Foundations, "Deploy dev" (needs John's approval: creates the two
-  dev stacks; cost ≈ zero: free certificate, free-tier CloudFront/S3).
+- **Dev deployed** (John ran `cdk deploy --all -c stage=dev`).
+  `PensionTracker-Dev-Certificate` (us-east-1) and `PensionTracker-Dev-Site`
+  (eu-west-1) are CREATE_COMPLETE. Verified: `https://dev.pensiontrackerapp.com`
+  returns 200 with a valid ACM certificate (CN/SAN `dev.pensiontrackerapp.com`,
+  expires May 2027, auto-renewed) and `X-Robots-Tag: noindex` alongside the
+  security headers; `http://` returns 301 → `https://`; the dev bucket's direct
+  S3 URL returns 403. Prod unchanged: apex and `www` still return 200 and
+  `cdk diff -c stage=prod` shows no differences in all three stacks.
+- **Next:** First Lambda end-to-end: `GET /health` behind an HTTP API, routed
+  through CloudFront at `/api/*`, deployed to dev.
 
 ## How to update this plan
 
